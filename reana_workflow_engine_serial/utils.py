@@ -49,18 +49,16 @@ def build_job_spec(job_name, image, compute_backend, command,
                    workflow_workspace, workflow_uuid, kerberos):
     """Build job specification to passed to RJC."""
     job_spec = {
-            "experiment": os.getenv("REANA_WORKFLOW_ENGINE_EXPERIMENT",
-                                    "default"),
-            "image": image,
-            "compute_backend": compute_backend,
-            "cmd": "bash -c \"cd {0} ; {1} \"".format(
-                workflow_workspace, escape_shell_arg(command)),
-            "prettified_cmd": command,
-            "workflow_workspace": workflow_workspace,
-            "job_name": job_name,
-            "cvmfs_mounts": MOUNT_CVMFS,
-            "workflow_uuid": workflow_uuid,
-            "kerberos": kerberos,
+        "image": image,
+        "compute_backend": compute_backend,
+        "cmd": "bash -c \"cd {0} ; {1} \"".format(
+            workflow_workspace, escape_shell_arg(command)),
+        "prettified_cmd": command,
+        "workflow_workspace": workflow_workspace,
+        "job_name": job_name,
+        "cvmfs_mounts": MOUNT_CVMFS,
+        "workflow_uuid": workflow_uuid,
+        "kerberos": kerberos,
     }
     return job_spec
 
@@ -228,3 +226,30 @@ def publish_workflow_failure(job_id,
                                           build_progress_message(
                                               failed=failed_jobs)
                                       })
+
+
+def get_targeted_workflow_steps(workflow_json, target_step):
+    """Build the workflow steps until the given target step.
+
+    :param workflow_json: Dictionary representing the serial workflow spec.
+    :type dict:
+    :param target_step: Step until which the workflow will be run identified
+        by name.
+    :type str:
+    :returns: A list of the steps which should be run.
+    :rtype: dict
+    """
+    selected_steps = []
+    if target_step:
+        target_step_matched = False
+        for step in workflow_json['steps']:
+            selected_steps.append(step)
+            if step['name'] == target_step:
+                target_step_matched = True
+                break
+        if not target_step_matched:
+            logging.info(f'The target step {target_step} was not found, '
+                         f'running the complete workflow.')
+    else:
+        selected_steps = workflow_json['steps']
+    return selected_steps
